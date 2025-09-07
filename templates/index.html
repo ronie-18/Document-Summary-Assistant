@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Summary Assistant</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+        color: white;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .main-content {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+      }
+
+      .upload-section {
+        margin-bottom: 40px;
+      }
+
+      .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(45deg, #f8f9ff, #fff);
+        position: relative;
+      }
+
+      .upload-area:hover {
+        border-color: #764ba2;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+      }
+
+      .upload-area.dragover {
+        border-color: #764ba2;
+        background: linear-gradient(45deg, #f0f2ff, #fff);
+        transform: scale(1.02);
+      }
+
+      .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #667eea;
+      }
+
+      .upload-text h3 {
+        font-size: 1.4rem;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .upload-text p {
+        color: #666;
+        font-size: 1rem;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .controls {
+        display: none;
+        gap: 20px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .summary-length {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .summary-length label {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .length-option {
+        padding: 8px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .length-option:hover {
+        border-color: #667eea;
+        color: #667eea;
+      }
+
+      .length-option.active {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border-color: transparent;
+      }
+
+      .process-btn {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .process-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .process-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-text {
+        color: #666;
+        font-size: 1.1rem;
+      }
+
+      .results {
+        display: none;
+      }
+
+      .file-info {
+        background: #f8f9ff;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        border-left: 4px solid #667eea;
+      }
+
+      .file-info h3 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .file-info p {
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .summary-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .summary-section h3 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .summary-content {
+        line-height: 1.8;
+        color: #444;
+        font-size: 1rem;
+      }
+
+      .key-points {
+        background: #f0f8ff;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        border-left: 4px solid #4caf50;
+      }
+
+      .key-points h4 {
+        color: #2e7d32;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+      }
+
+      .key-points ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .key-points li {
+        padding: 8px 0;
+        border-bottom: 1px solid #e0f2e0;
+        position: relative;
+        padding-left: 25px;
+      }
+
+      .key-points li:before {
+        content: "•";
+        color: #4caf50;
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+        font-size: 1.2rem;
+      }
+
+      .key-points li:last-child {
+        border-bottom: none;
+      }
+
+      .stats {
+        background: #fff3e0;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        border-left: 4px solid #ff9800;
+      }
+
+      .stats h4 {
+        color: #f57c00;
+        margin-bottom: 10px;
+      }
+
+      .stats p {
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border-left: 4px solid #f44336;
+        display: none;
+      }
+
+      .success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border-left: 4px solid #4caf50;
+        display: none;
+      }
+
+      .reset-btn {
+        background: #f5f5f5;
+        color: #666;
+        padding: 10px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .reset-btn:hover {
+        background: #e0e0e0;
+        color: #333;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 15px;
+        }
+
+        .main-content {
+          padding: 20px;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .upload-area {
+          padding: 40px 15px;
+        }
+
+        .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .summary-length {
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .process-btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>📄 Document Summary Assistant</h1>
+        <p>
+          Upload any PDF or image document and get intelligent summaries powered
+          by Python AI
+        </p>
+      </header>
+
+      <main class="main-content">
+        <section class="upload-section">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">
+              <h3>Drop your document here or click to browse</h3>
+              <p>
+                Supports PDF files and images (PNG, JPG, JPEG) • Max size: 10MB
+              </p>
+            </div>
+            <input
+              type="file"
+              id="fileInput"
+              class="file-input"
+              accept=".pdf,image/*"
+            />
+          </div>
+
+          <div class="error" id="errorMessage"></div>
+          <div class="success" id="successMessage"></div>
+
+          <div class="controls" id="controls">
+            <div class="summary-length">
+              <label>Summary Length:</label>
+              <div class="length-option active" data-length="short">Short</div>
+              <div class="length-option" data-length="medium">Medium</div>
+              <div class="length-option" data-length="long">Long</div>
+            </div>
+            <button class="process-btn" id="processBtn">
+              Generate Summary
+            </button>
+          </div>
+        </section>
+
+        <div class="loading" id="loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-text" id="loadingText">
+            Processing your document...
+          </div>
+        </div>
+
+        <section class="results" id="results">
+          <div class="file-info" id="fileInfo"></div>
+
+          <div class="summary-section">
+            <h3>📋 Document Summary</h3>
+            <div class="summary-content" id="summaryContent"></div>
+
+            <div class="key-points" id="keyPointsSection">
+              <h4>🔑 Key Points</h4>
+              <ul id="keyPointsList"></ul>
+            </div>
+
+            <div class="stats" id="statsSection">
+              <h4>📊 Summary Statistics</h4>
+              <div id="statsContent"></div>
+            </div>
+          </div>
+
+          <button class="reset-btn" id="resetBtn">
+            Process Another Document
+          </button>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      class DocumentSummaryApp {
+        constructor() {
+          this.currentFile = null;
+          this.extractedText = "";
+          this.summaryLength = "medium";
+          this.fileData = null;
+          this.init();
+        }
+
+        init() {
+          this.setupEventListeners();
+        }
+
+        setupEventListeners() {
+          const uploadArea = document.getElementById("uploadArea");
+          const fileInput = document.getElementById("fileInput");
+          const processBtn = document.getElementById("processBtn");
+          const resetBtn = document.getElementById("resetBtn");
+          const lengthOptions = document.querySelectorAll(".length-option");
+
+          // File upload events
+          uploadArea.addEventListener("click", () => fileInput.click());
+
+          uploadArea.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadArea.classList.add("dragover");
+          });
+
+          uploadArea.addEventListener("dragleave", () => {
+            uploadArea.classList.remove("dragover");
+          });
+
+          uploadArea.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove("dragover");
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+              this.handleFileSelect(files[0]);
+            }
+          });
+
+          fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+              this.handleFileSelect(e.target.files[0]);
+            }
+          });
+
+          // Summary length selection
+          lengthOptions.forEach((option) => {
+            option.addEventListener("click", () => {
+              lengthOptions.forEach((opt) => opt.classList.remove("active"));
+              option.classList.add("active");
+              this.summaryLength = option.dataset.length;
+            });
+          });
+
+          // Process button
+          processBtn.addEventListener("click", () => {
+            this.processDocument();
+          });
+
+          // Reset button
+          resetBtn.addEventListener("click", () => {
+            this.resetApp();
+          });
+        }
+
+        async handleFileSelect(file) {
+          if (!this.validateFile(file)) {
+            return;
+          }
+
+          this.currentFile = file;
+          this.showLoading();
+          this.updateLoadingText("Uploading and extracting text...");
+
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              this.extractedText = result.text;
+              this.fileData = {
+                filename: result.filename,
+                file_size: result.file_size,
+                file_type: result.file_type,
+              };
+              this.showSuccess("Text extracted successfully!");
+              this.showControls();
+            } else {
+              this.showError(result.error);
+            }
+          } catch (error) {
+            this.showError("Network error: " + error.message);
+          } finally {
+            this.hideLoading();
+          }
+        }
+
+        validateFile(file) {
+          const maxSize = 10 * 1024 * 1024; // 10MB
+          const allowedTypes = [
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+          ];
+
+          if (file.size > maxSize) {
+            this.showError("File size must be less than 10MB");
+            return false;
+          }
+
+          if (!allowedTypes.includes(file.type)) {
+            this.showError(
+              "Only PDF and image files (PNG, JPG, JPEG) are supported"
+            );
+            return false;
+          }
+
+          return true;
+        }
+
+        async processDocument() {
+          if (!this.extractedText) {
+            this.showError("No text extracted. Please upload a file first.");
+            return;
+          }
+
+          this.showLoading();
+          this.updateLoadingText("Generating intelligent summary...");
+
+          try {
+            const response = await fetch("/summarize", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                text: this.extractedText,
+                length: this.summaryLength,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              this.displayResults(result);
+              this.showSuccess("Summary generated successfully!");
+            } else {
+              this.showError(result.error);
+            }
+          } catch (error) {
+            this.showError("Network error: " + error.message);
+          } finally {
+            this.hideLoading();
+          }
+        }
+
+        displayResults(result) {
+          const fileInfo = document.getElementById("fileInfo");
+          const summaryContent = document.getElementById("summaryContent");
+          const keyPointsList = document.getElementById("keyPointsList");
+          const statsContent = document.getElementById("statsContent");
+
+          // Display file information
+          const fileSizeMB = (this.fileData.file_size / 1024 / 1024).toFixed(2);
+          fileInfo.innerHTML = `
+                    <h3>📁 File Information</h3>
+                    <p><strong>Name:</strong> ${this.fileData.filename}</p>
+                    <p><strong>Size:</strong> ${fileSizeMB} MB</p>
+                    <p><strong>Type:</strong> ${this.fileData.file_type}</p>
+                `;
+
+          // Display summary
+          summaryContent.innerHTML = `<p>${result.summary}</p>`;
+
+          // Display key points
+          keyPointsList.innerHTML = "";
+          result.key_points.forEach((point) => {
+            const li = document.createElement("li");
+            li.textContent = point;
+            keyPointsList.appendChild(li);
+          });
+
+          // Display statistics
+          statsContent.innerHTML = `
+                    <p><strong>Original Sentences:</strong> ${result.stats.original_sentences}</p>
+                    <p><strong>Summary Sentences:</strong> ${result.stats.summary_sentences}</p>
+                    <p><strong>Word Count:</strong> ${result.stats.word_count}</p>
+                    <p><strong>Compression Ratio:</strong> ${result.stats.compression_ratio}%</p>
+                `;
+
+          this.showResults();
+        }
+
+        showControls() {
+          document.getElementById("controls").style.display = "flex";
+        }
+
+        showLoading() {
+          document.getElementById("loading").style.display = "block";
+          document.getElementById("processBtn").disabled = true;
+        }
+
+        hideLoading() {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("processBtn").disabled = false;
+        }
+
+        updateLoadingText(text) {
+          document.getElementById("loadingText").textContent = text;
+        }
+
+        showResults() {
+          document.getElementById("results").style.display = "block";
+          document
+            .getElementById("results")
+            .scrollIntoView({ behavior: "smooth" });
+        }
+
+        showError(message) {
+          const errorDiv = document.getElementById("errorMessage");
+          const successDiv = document.getElementById("successMessage");
+          errorDiv.textContent = message;
+          errorDiv.style.display = "block";
+          successDiv.style.display = "none";
+        }
+
+        showSuccess(message) {
+          const successDiv = document.getElementById("successMessage");
+          const errorDiv = document.getElementById("errorMessage");
+          successDiv.textContent = message;
+          successDiv.style.display = "block";
+          errorDiv.style.display = "none";
+        }
+
+        hideMessages() {
+          document.getElementById("errorMessage").style.display = "none";
+          document.getElementById("successMessage").style.display = "none";
+        }
+
+        resetApp() {
+          this.currentFile = null;
+          this.extractedText = "";
+          this.fileData = null;
+          document.getElementById("fileInput").value = "";
+          document.getElementById("controls").style.display = "none";
+          document.getElementById("results").style.display = "none";
+          this.hideMessages();
+          this.hideLoading();
+
+          // Reset summary length to medium
+          document
+            .querySelectorAll(".length-option")
+            .forEach((opt) => opt.classList.remove("active"));
+          document
+            .querySelector('[data-length="medium"]')
+            .classList.add("active");
+          this.summaryLength = "medium";
+        }
+      }
+
+      // Initialize the app when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        new DocumentSummaryApp();
+      });
+    </script>
+  </body>
+</html>
